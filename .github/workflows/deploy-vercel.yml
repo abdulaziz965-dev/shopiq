@@ -28,7 +28,10 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter web
-        run: flutter build web --release
+        run: |
+          flutter build web --release
+          rm -rf web
+          cp -R build/web web
 
       - name: Pull Vercel project settings
         run: |
