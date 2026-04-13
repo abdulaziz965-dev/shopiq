@@ -60,8 +60,8 @@ class RealSearchService {
         emoji: _categoryEmoji(query),
         price: price,
         originalPrice: price * 1.15,   // estimate original
-        rating: (item['rating'] as num?)?.toDouble() ?? 4.0,
-        reviews: (item['reviews'] as num?)?.toInt() ?? 0,
+        rating: _toDouble(item['rating'], fallback: 4.0),
+        reviews: _parseReviews(item['reviews']),
         delivery: 'Check site',
         deliveryDays: 3,
         discount: 13,
@@ -113,7 +113,7 @@ class RealSearchService {
         emoji: _categoryEmoji(query),
         price: price,
         originalPrice: orig,
-        rating: (item['product_star_rating'] as num?)?.toDouble() ?? 4.0,
+        rating: _toDouble(item['product_star_rating'], fallback: 4.0),
         reviews: _parseReviews(item['product_num_ratings']),
         delivery: _amazonDelivery(item),
         deliveryDays: _amazonDeliveryDays(item),
@@ -159,7 +159,7 @@ class RealSearchService {
         emoji: _categoryEmoji(query),
         price: price,
         originalPrice: orig > 0 ? orig : price * 1.2,
-        rating: (item['rating'] as num?)?.toDouble() ?? 4.0,
+        rating: _toDouble(item['rating'], fallback: 4.0),
         reviews: _parseReviews(item['ratingCount']),
         delivery: '2-3 days',
         deliveryDays: 2,
@@ -183,6 +183,13 @@ class RealSearchService {
     if (val == null) return 0;
     final s = val.toString().replaceAll(RegExp(r'[,\s]'), '');
     return int.tryParse(s) ?? 0;
+  }
+
+  double _toDouble(dynamic value, {double fallback = 0}) {
+    if (value is num) return value.toDouble();
+    if (value == null) return fallback;
+    final cleaned = value.toString().replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(cleaned) ?? fallback;
   }
 
   int _calcDiscount(double price, double orig) {
@@ -256,7 +263,7 @@ class RealSearchService {
   }
 
   String _amazonDelivery(Map item) {
-    final delivery = item['delivery'] as String?;
+    final delivery = item['delivery']?.toString();
     if (delivery == null) return '2-4 days';
     if (delivery.toLowerCase().contains('tomorrow')) return 'Tomorrow';
     if (delivery.toLowerCase().contains('today')) return 'Today';
@@ -264,7 +271,7 @@ class RealSearchService {
   }
 
   int _amazonDeliveryDays(Map item) {
-    final delivery = (item['delivery'] as String? ?? '').toLowerCase();
+    final delivery = (item['delivery']?.toString() ?? '').toLowerCase();
     if (delivery.contains('today')) return 0;
     if (delivery.contains('tomorrow')) return 1;
     if (delivery.contains('2')) return 2;

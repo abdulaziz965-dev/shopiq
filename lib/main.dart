@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'services/wishlist_service.dart';
 import 'services/search_service.dart';
 import 'services/ai_service.dart';
+import 'services/theme_service.dart';
 import 'screens/main_shell.dart';
 import 'utils/app_colors.dart';
 
@@ -37,46 +38,52 @@ class ShopIQApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => WishlistService()),
         ChangeNotifierProvider(create: (_) => SearchService()),
+        ChangeNotifierProvider(create: (_) => ThemeService()),
         Provider(create: (_) => AIService()),
       ],
-      child: MaterialApp(
-        title: 'ShopIQ',
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(),
-        builder: (context, child) {
-          if (child == null) return const SizedBox.shrink();
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth <= 500) return child;
-              return ColoredBox(
-                color: const Color(0xFFEFF3F9),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 430),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x220B1324),
-                            blurRadius: 30,
-                            offset: Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: child,
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, _) => MaterialApp(
+          title: 'ShopIQ',
+          debugShowCheckedModeBanner: false,
+          themeMode: themeService.themeMode,
+          theme: _buildLightTheme(),
+          darkTheme: _buildDarkTheme(),
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
+            final cs = Theme.of(context).colorScheme;
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth <= 500) return child;
+                return ColoredBox(
+                  color: cs.surfaceContainerHighest,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.16),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: child,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
-          );
-        },
-        home: const MainShell(),
+                );
+              },
+            );
+          },
+          home: const MainShell(),
+        ),
       ),
     );
   }
@@ -127,6 +134,62 @@ class ShopIQApp extends StatelessWidget {
         backgroundColor: AppColors.bg,
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    const darkBg = Color(0xFF0B1220);
+    const darkCard = Color(0xFF121A2B);
+    const darkCard2 = Color(0xFF172238);
+    const darkBorder = Color(0x2AFFFFFF);
+
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBg,
+      primaryColor: AppColors.accent,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.accent,
+        secondary: AppColors.accent2,
+        surface: darkCard,
+        surfaceContainerHighest: Color(0xFF060B16),
+        error: Color(0xFFEF4444),
+      ),
+      textTheme: GoogleFonts.dmSansTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(color: Color(0xFFF3F4F6), fontWeight: FontWeight.w700),
+          bodyLarge: TextStyle(color: Color(0xFFF3F4F6)),
+          bodyMedium: TextStyle(color: Color(0xFF9CA3AF)),
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        color: darkCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+          side: BorderSide(color: darkBorder, width: 0.8),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkCard2,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: darkCard,
+        selectedItemColor: AppColors.accent,
+        unselectedItemColor: Color(0xFF9CA3AF),
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkBg,
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
     );
   }

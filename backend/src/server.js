@@ -12,12 +12,28 @@ const AMAZON_HOST = process.env.AMAZON_API_HOST || 'real-time-amazon-data.p.rapi
 const AMAZON_SEARCH_PATH = process.env.AMAZON_SEARCH_PATH || '/search';
 const FLIPKART_HOST = process.env.FLIPKART_API_HOST || 'flipkart-product-scrapper.p.rapidapi.com';
 const FLIPKART_SEARCH_PATH = process.env.FLIPKART_SEARCH_PATH || '/search';
-const FLIPKART_ALT_SEARCH_PATH = process.env.FLIPKART_ALT_SEARCH_PATH || '/products/search';
+const FLIPKART_ALT_SEARCH_PATH = (process.env.FLIPKART_ALT_SEARCH_PATH || '').trim();
 const FLIPKART_CATEGORY_ID = process.env.FLIPKART_CATEGORY_ID || 'axc';
 const FLIPKART_CATEGORY_PHONE = process.env.FLIPKART_CATEGORY_PHONE || 'tyy,4io';
 const FLIPKART_CATEGORY_LAPTOP = process.env.FLIPKART_CATEGORY_LAPTOP || '6bo,b5g';
 const FLIPKART_CATEGORY_AUDIO = process.env.FLIPKART_CATEGORY_AUDIO || '0pm,fcn';
 const FLIPKART_CATEGORY_SHOES = process.env.FLIPKART_CATEGORY_SHOES || 'osp,cil';
+const SUGGESTION_SEED = [
+  'iPhone 15',
+  'Samsung Galaxy S24',
+  'OnePlus 12',
+  'Nothing Phone',
+  'MacBook Air M3',
+  'Gaming Laptop',
+  'Sony WH-1000XM5',
+  'Boat Airdopes',
+  'Bluetooth Speaker',
+  'Smartwatch',
+  'Running Shoes',
+  'DSLR Camera',
+  'Air Conditioner',
+  'Refrigerator',
+];
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
@@ -71,6 +87,37 @@ app.get('/api/search', async (req, res) => {
     });
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Unexpected backend failure' });
+  }
+});
+
+app.get('/api/suggest', async (req, res) => {
+  const q = (req.query.q || '').toString().trim();
+  const limit = Math.min(Number(req.query.limit || 8) || 8, 12);
+  if (!q) {
+    return res.json({ suggestions: SUGGESTION_SEED.slice(0, limit) });
+  }
+
+  try {
+    const [serpItems, amazonItems, flipkartItems] = await Promise.all([
+      searchSerp(q).catch(() => ({ items: [] })),
+      searchAmazon(q).catch(() => ({ items: [] })),
+      searchFlipkart(q).catch(() => ({ items: [] })),
+    ]);
+
+    const live = dedupeSuggestions([
+      ...extractSuggestionTitles(serpItems.items, q),
+      ...extractSuggestionTitles(amazonItems.items, q),
+      ...extractSuggestionTitles(flipkartItems.items, q),
+    ]);
+
+    const merged = dedupeSuggestions([
+      ...live,
+      ...extractSeedSuggestions(q),
+    ]).slice(0, limit);
+
+    return res.json({ suggestions: merged });
+  } catch {
+    return res.json({ suggestions: extractSeedSuggestions(q).slice(0, limit) });
   }
 });
 
@@ -172,10 +219,10 @@ async function searchFlipkart(query) {
   const key = process.env.RAPID_API_KEY || '';
   if (!key) throw new Error('Missing RAPID_API_KEY');
 
-  const attempts = [
-    { host: FLIPKART_HOST, path: FLIPKART_SEARCH_PATH },
-    { host: FLIPKART_HOST, path: FLIPKART_ALT_SEARCH_PATH },
-  ];
+  const attempts = [{ host: FLIPKART_HOST, path: FLIPKART_SEARCH_PATH }];
+  if (FLIPKART_ALT_SEARCH_PATH && FLIPKART_ALT_SEARCH_PATH !== FLIPKART_SEARCH_PATH) {
+    attempts.push({ host: FLIPKART_HOST, path: FLIPKART_ALT_SEARCH_PATH });
+  }
 
   let data = null;
   let lastError = '';
@@ -212,6 +259,9 @@ async function searchFlipkart(query) {
   }
 
   if (data == null) {
+    if (lastError.includes('HTTP 429')) {
+      return { items: [] };
+    }
     throw new Error(lastError || 'Flipkart endpoint not reachable');
   }
 
@@ -348,4 +398,40 @@ function dedupeByTitle(items) {
     out.push(item);
   }
   return out;
+}
+
+function extractSuggestionTitles(items, query) {
+  const q = String(query || '').toLowerCase();
+  return (Array.isArray(items) ? items : [])
+    .map((item) => normalizeSuggestion(item?.title))
+    .filter(Boolean)
+    .filter((title) => title.toLowerCase().includes(q))
+    .slice(0, 6);
+}
+
+function extractSeedSuggestions(query) {
+  const q = String(query || '').toLowerCase();
+  return SUGGESTION_SEED
+    .filter((item) => item.toLowerCase().includes(q))
+    .slice(0, 8);
+}
+
+function dedupeSuggestions(items) {
+  const out = [];
+  const seen = new Set();
+  for (const item of items) {
+    const normalized = normalizeSuggestion(item);
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalized);
+  }
+  return out;
+}
+
+function normalizeSuggestion(value) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  return text.length > 70 ? text.slice(0, 70).trim() : text;
 }

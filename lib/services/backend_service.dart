@@ -42,6 +42,37 @@ class BackendService {
     return products;
   }
 
+  Future<List<String>> autocompleteSuggestions(String query, {int limit = 8}) async {
+    if (!isConfigured) return const [];
+
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final uri = Uri.parse('$_resolvedBaseUrl/api/suggest').replace(
+        queryParameters: {
+          'q': trimmed,
+          'limit': limit.toString(),
+        },
+      );
+
+      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return const [];
+
+      final decoded = jsonDecode(resp.body);
+      final raw = _extractSuggestionItems(decoded);
+
+      return raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .take(limit)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   List<dynamic> _extractItems(dynamic decoded) {
     if (decoded is List) return decoded;
     if (decoded is Map<String, dynamic>) {
@@ -55,6 +86,19 @@ class BackendService {
         final dataItems = data['items'];
         if (dataItems is List) return dataItems;
       }
+    }
+    return const [];
+  }
+
+  List<dynamic> _extractSuggestionItems(dynamic decoded) {
+    if (decoded is List) return decoded;
+    if (decoded is Map<String, dynamic>) {
+      final suggestions = decoded['suggestions'];
+      if (suggestions is List) return suggestions;
+      final items = decoded['items'];
+      if (items is List) return items;
+      final data = decoded['data'];
+      if (data is List) return data;
     }
     return const [];
   }

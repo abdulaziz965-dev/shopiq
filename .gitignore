@@ -52,3 +52,5 @@ app.*.map.json
 
 # Backend dependencies
 /backend/node_modules/
+.vercel
+.env*.local

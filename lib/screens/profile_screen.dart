@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../utils/app_colors.dart';
 import '../services/wishlist_service.dart';
+import '../services/theme_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,15 +14,16 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _priceDropAlerts = true;
-  bool _lightMode = true;
   bool _reviewShield = true;
 
   @override
   Widget build(BuildContext context) {
     final wishlist = context.watch<WishlistService>();
+    final themeService = context.watch<ThemeService>();
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: cs.surfaceContainerHighest,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -48,15 +50,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ], context),
               _buildSection('PREFERENCES', [
                 _Row(
-                  Icons.light_mode_rounded,
-                  'Light Mode',
+                  themeService.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  'Dark Mode',
                   trailing: Switch.adaptive(
-                    value: _lightMode,
-                    onChanged: (value) => setState(() => _lightMode = value),
+                    value: themeService.isDark,
+                    onChanged: (value) => themeService.setDarkMode(value),
                     activeThumbColor: AppColors.accent,
                     activeTrackColor: AppColors.accent.withValues(alpha: 0.3),
                   ),
-                  onTap: () => setState(() => _lightMode = !_lightMode),
+                  onTap: () => themeService.setDarkMode(!themeService.isDark),
                 ),
                 _Row(
                   Icons.shield_rounded,
@@ -101,11 +103,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildHeader(int savedCount) {
+    final cs = Theme.of(context).colorScheme;
+    final textSecondary = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.bg3, AppColors.bg], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-        border: Border(bottom: BorderSide(color: AppColors.border2, width: 0.7)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.accent.withValues(alpha: 0.16),
+            cs.surfaceContainerHighest,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.65), width: 0.7)),
       ),
       child: Column(
         children: [
@@ -124,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Smart Shopper', style: GoogleFonts.sora(fontSize: 20, fontWeight: FontWeight.w700)),
-                  Text('shopper@shopiq.app', style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.textSecondary)),
+                  Text('shopper@shopiq.app', style: GoogleFonts.dmSans(fontSize: 12, color: textSecondary)),
                 ],
               ),
             ],
@@ -145,12 +156,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSection(String title, List<_Row> rows, BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textMuted = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted, letterSpacing: 0.5)),
+          Text(title, style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: textMuted, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           ...rows.map((row) => InkWell(
             onTap: row.onTap,
@@ -159,12 +172,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: cs.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border2, width: 0.7),
-              boxShadow: const [
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6), width: 0.7),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x0D0B1324),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 10,
                   offset: Offset(0, 3),
                 ),
@@ -178,7 +191,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (row.trailing != null)
                   row.trailing!
                 else
-                  const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
+                  Icon(Icons.chevron_right, color: textMuted, size: 18),
               ],
             ),
           ),
@@ -210,19 +223,21 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textMuted = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border2, width: 0.7),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6), width: 0.7),
         ),
         child: Column(
           children: [
             Text(value, style: GoogleFonts.sora(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.accent)),
             const SizedBox(height: 2),
-            Text(label, style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textMuted)),
+            Text(label, style: GoogleFonts.dmSans(fontSize: 10, color: textMuted)),
           ],
         ),
       ),

@@ -27,6 +27,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final pages = [
       HomeScreen(
         onOpenSearch: () => _setTab(1),
@@ -39,12 +41,12 @@ class _MainShellState extends State<MainShell> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: cs.surfaceContainerHighest,
       body: IndexedStack(
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(cs, textTheme),
     );
   }
 
@@ -53,12 +55,13 @@ class _MainShellState extends State<MainShell> {
     setState(() => _currentIndex = index);
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(ColorScheme cs, TextTheme textTheme) {
+    final inactive = textTheme.bodyMedium?.color ?? AppColors.textMuted;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bg2,
+      decoration: BoxDecoration(
+        color: cs.surface,
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
+          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7), width: 0.5),
         ),
       ),
       child: SafeArea(
@@ -88,7 +91,7 @@ class _MainShellState extends State<MainShell> {
                       children: [
                         Icon(
                           item.icon,
-                          color: isActive ? AppColors.accent : AppColors.textMuted,
+                          color: isActive ? AppColors.accent : inactive,
                           size: 22,
                         ),
                         const SizedBox(height: 2),
@@ -99,7 +102,7 @@ class _MainShellState extends State<MainShell> {
                           style: GoogleFonts.dmSans(
                             fontSize: 10,
                             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                            color: isActive ? AppColors.accent : AppColors.textMuted,
+                            color: isActive ? AppColors.accent : inactive,
                           ),
                         ),
                       ],

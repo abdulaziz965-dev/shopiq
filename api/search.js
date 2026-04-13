@@ -200,12 +200,12 @@ async function searchFlipkart(query) {
 
   const host = process.env.FLIPKART_API_HOST || 'flipkart-product-scrapper.p.rapidapi.com';
   const searchPath = process.env.FLIPKART_SEARCH_PATH || '/search';
-  const altSearchPath = process.env.FLIPKART_ALT_SEARCH_PATH || '/products/search';
+  const altSearchPath = (process.env.FLIPKART_ALT_SEARCH_PATH || '').trim();
 
-  const attempts = [
-    { host, path: searchPath },
-    { host, path: altSearchPath },
-  ];
+  const attempts = [{ host, path: searchPath }];
+  if (altSearchPath && altSearchPath !== searchPath) {
+    attempts.push({ host, path: altSearchPath });
+  }
 
   let data = null;
   let lastError = '';
@@ -242,6 +242,9 @@ async function searchFlipkart(query) {
   }
 
   if (data == null) {
+    if (lastError.includes('HTTP 429')) {
+      return { items: [] };
+    }
     throw new Error(lastError || 'Flipkart endpoint not reachable');
   }
 

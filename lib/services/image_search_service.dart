@@ -12,6 +12,12 @@ import 'package:http/http.dart' as http;
 class ImageSearchService {
   static const _anthropicKey = String.fromEnvironment('ANTHROPIC_API_KEY', defaultValue: '');
   static const _model = 'claude-sonnet-4-20250514';
+  static const _supportedMediaTypes = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  };
 
   bool get _hasApiKey => _anthropicKey.isNotEmpty && !_anthropicKey.startsWith('YOUR_');
 
@@ -24,39 +30,7 @@ class ImageSearchService {
     final base64Image = base64Encode(bytes);
     final mediaType = _detectMediaType(imageFile.path);
 
-    final body = jsonEncode({
-      'model': _model,
-      'max_tokens': 200,
-      'messages': [
-        {
-          'role': 'user',
-          'content': [
-            {
-              'type': 'image',
-              'source': {
-                'type': 'base64',
-                'media_type': mediaType,
-                'data': base64Image,
-              },
-            },
-            {
-              'type': 'text',
-              'text': '''Identify the product in this image. 
-Respond ONLY with a JSON object (no markdown) in this exact format:
-{
-  "name": "exact product name with brand and model",
-  "category": "one of: smartphone, laptop, headphones, earphones, smartwatch, shoes, camera, tablet, tv, clothing, other",
-  "brand": "brand name",
-  "confidence": "high | medium | low",
-  "searchQuery": "optimized search query for Indian e-commerce sites like Amazon India and Flipkart"
-}
-
-If you cannot identify a product, set confidence to "low" and make a best guess.'''
-            }
-          ],
-        }
-      ],
-    });
+    final body = _buildVisionBody(base64Image, mediaType);
 
     final resp = await http.post(
       Uri.parse('https://api.anthropic.com/v1/messages'),
@@ -66,26 +40,14 @@ If you cannot identify a product, set confidence to "low" and make a best guess.
         'anthropic-version': '2023-06-01',
       },
       body: body,
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
 
     if (resp.statusCode != 200) {
-      throw Exception('Vision API error: ${resp.statusCode}');
+      throw Exception('Vision API ${resp.statusCode}: ${resp.body}');
     }
 
-    final data = jsonDecode(resp.body);
-    final text = data['content'][0]['text'] as String;
-
-    // Strip any markdown fences if present
-    final cleaned = text.replaceAll(RegExp(r'```json\s*|```\s*'), '').trim();
-    final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
-
-    return ImageIdentifyResult(
-      productName: parsed['name'] as String? ?? 'Unknown Product',
-      category: parsed['category'] as String? ?? 'other',
-      brand: parsed['brand'] as String? ?? '',
-      confidence: parsed['confidence'] as String? ?? 'low',
-      searchQuery: parsed['searchQuery'] as String? ?? parsed['name'] as String? ?? 'product',
-    );
+    final text = _extractTextFromResponse(resp.body);
+    return _parseIdentifyResult(text);
   }
 
   /// Identify product from raw bytes (for web/cross-platform use)
@@ -97,33 +59,8 @@ If you cannot identify a product, set confidence to "low" and make a best guess.
 
     final base64Image = base64Encode(bytes);
 
-    final body = jsonEncode({
-      'model': _model,
-      'max_tokens': 200,
-      'messages': [
-        {
-          'role': 'user',
-          'content': [
-            {
-              'type': 'image',
-              'source': {
-                'type': 'base64',
-                'media_type': mimeType,
-                'data': base64Image,
-              },
-            },
-            {
-              'type': 'text',
-              'text': '''Identify the product in this image. 
-Respond ONLY with a JSON object (no markdown, no explanation):
-{"name":"product name with brand and model","category":"smartphone|laptop|headphones|earphones|smartwatch|shoes|camera|tablet|tv|clothing|other","brand":"brand","confidence":"high|medium|low","searchQuery":"search query optimized for Amazon India / Flipkart"}
-
-If no product visible, use confidence: "low" and best guess.'''
-            }
-          ],
-        }
-      ],
-    });
+    final normalizedMimeType = _normalizeMediaType(mimeType);
+    final body = _buildVisionBody(base64Image, normalizedMimeType);
 
     final resp = await http.post(
       Uri.parse('https://api.anthropic.com/v1/messages'),
@@ -133,35 +70,127 @@ If no product visible, use confidence: "low" and best guess.'''
         'anthropic-version': '2023-06-01',
       },
       body: body,
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
 
     if (resp.statusCode != 200) {
       throw Exception('Vision API ${resp.statusCode}: ${resp.body}');
     }
 
-    final data = jsonDecode(resp.body);
-    final text = (data['content'][0]['text'] as String)
-        .replaceAll(RegExp(r'```json\s*|```\s*'), '')
-        .trim();
+    final text = _extractTextFromResponse(resp.body);
+    return _parseIdentifyResult(text);
+  }
 
+  String _buildVisionPrompt() => '''Identify the primary consumer product in this image.
+Return ONLY valid JSON (no markdown, no extra text) with exactly these keys:
+{"name":"exact product name with brand and model if visible","category":"smartphone|laptop|headphones|earphones|smartwatch|shoes|camera|tablet|tv|clothing|other","brand":"brand","confidence":"high|medium|low","searchQuery":"optimized search query for Amazon India / Flipkart"}
+If uncertain, set confidence to "low" and provide your best short guess.''';
+
+  String _buildVisionBody(String base64Image, String mediaType) => jsonEncode({
+    'model': _model,
+    'max_tokens': 200,
+    'messages': [
+      {
+        'role': 'user',
+        'content': [
+          {
+            'type': 'image',
+            'source': {
+              'type': 'base64',
+              'media_type': mediaType,
+              'data': base64Image,
+            },
+          },
+          {
+            'type': 'text',
+            'text': _buildVisionPrompt(),
+          }
+        ],
+      }
+    ],
+  });
+
+  String _extractTextFromResponse(String responseBody) {
+    final data = jsonDecode(responseBody) as Map<String, dynamic>;
+    final content = data['content'];
+    if (content is List && content.isNotEmpty) {
+      final first = content.first;
+      if (first is Map<String, dynamic>) {
+        final text = first['text'];
+        if (text is String && text.trim().isNotEmpty) return text.trim();
+      }
+    }
+    throw const FormatException('Vision response did not contain text content.');
+  }
+
+  ImageIdentifyResult _parseIdentifyResult(String rawText) {
+    final cleaned = rawText.replaceAll(RegExp(r'```json\s*|```\s*'), '').trim();
+
+    Map<String, dynamic>? parsed;
     try {
-      final parsed = jsonDecode(text) as Map<String, dynamic>;
-      return ImageIdentifyResult(
-        productName: parsed['name'] as String? ?? 'Product',
-        category: parsed['category'] as String? ?? 'other',
-        brand: parsed['brand'] as String? ?? '',
-        confidence: parsed['confidence'] as String? ?? 'low',
-        searchQuery: parsed['searchQuery'] as String? ?? 'product',
-      );
+      parsed = jsonDecode(cleaned) as Map<String, dynamic>;
     } catch (_) {
-      // Fallback: treat whole response as product name
-      return ImageIdentifyResult(
-        productName: text.length > 60 ? text.substring(0, 60) : text,
-        category: 'other',
-        brand: '',
-        confidence: 'low',
-        searchQuery: text.length > 60 ? text.substring(0, 60) : text,
-      );
+      final match = RegExp(r'\{[\s\S]*\}').firstMatch(cleaned);
+      if (match != null) {
+        try {
+          parsed = jsonDecode(match.group(0)!) as Map<String, dynamic>;
+        } catch (_) {
+          parsed = null;
+        }
+      }
+    }
+
+    final productName = (parsed?['name'] as String?)?.trim();
+    final brand = (parsed?['brand'] as String?)?.trim() ?? '';
+    final category = _normalizeCategory((parsed?['category'] as String?)?.trim());
+    final confidence = _normalizeConfidence((parsed?['confidence'] as String?)?.trim());
+    final searchQuery = (parsed?['searchQuery'] as String?)?.trim();
+
+    final fallbackText = cleaned.isEmpty ? 'product' : cleaned;
+    final safeText = fallbackText.length > 80 ? fallbackText.substring(0, 80) : fallbackText;
+
+    return ImageIdentifyResult(
+      productName: productName?.isNotEmpty == true ? productName! : safeText,
+      category: category,
+      brand: brand,
+      confidence: confidence,
+      searchQuery: searchQuery?.isNotEmpty == true ? searchQuery! : (productName?.isNotEmpty == true ? productName! : safeText),
+    );
+  }
+
+  String _normalizeMediaType(String mimeType) {
+    final value = mimeType.trim().toLowerCase();
+    if (value == 'image/jpg') return 'image/jpeg';
+    if (_supportedMediaTypes.contains(value)) return value;
+    return 'image/jpeg';
+  }
+
+  String _normalizeCategory(String? category) {
+    const allowed = {
+      'smartphone',
+      'laptop',
+      'headphones',
+      'earphones',
+      'smartwatch',
+      'shoes',
+      'camera',
+      'tablet',
+      'tv',
+      'clothing',
+      'other',
+    };
+    final value = (category ?? '').toLowerCase();
+    return allowed.contains(value) ? value : 'other';
+  }
+
+  String _normalizeConfidence(String? confidence) {
+    final value = (confidence ?? '').toLowerCase();
+    switch (value) {
+      case 'high':
+      case 'medium':
+      case 'low':
+        return value;
+      default:
+        return 'low';
     }
   }
 

@@ -1,46 +1,36 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import 'backend_service.dart';
+import 'mock_data_service.dart';
 import 'real_search_service.dart';
-import 'image_search_service.dart';
 
 enum SearchState { idle, loading, results, empty }
-enum SearchMode { text, image }
 
 class SearchService extends ChangeNotifier {
   SearchState _state = SearchState.idle;
-  SearchMode _mode = SearchMode.text;
   List<Product> _results = [];
   List<Product> _filteredResults = [];
   String _query = '';
   String _activeFilter = 'All';
   String _sortBy = 'score';
-  ImageIdentifyResult? _imageResult;
   String? _errorMessage;
 
   final _realSearch = RealSearchService();
-  final _imageSearch = ImageSearchService();
   final _backend = BackendService();
 
   SearchState get state => _state;
-  SearchMode get mode => _mode;
   List<Product> get results => _filteredResults;
   String get query => _query;
   String get activeFilter => _activeFilter;
-  ImageIdentifyResult? get imageResult => _imageResult;
   String? get errorMessage => _errorMessage;
 
   Future<void> search(String query) async {
     if (query.trim().isEmpty) return;
     _query = query.trim();
-    _mode = SearchMode.text;
     _state = SearchState.loading;
     _results = [];
     _filteredResults = [];
     _activeFilter = 'All';
-    _imageResult = null;
     _errorMessage = null;
     notifyListeners();
 
@@ -72,14 +62,14 @@ class SearchService extends ChangeNotifier {
           _errorMessage =
               'Backend temporarily unavailable ($e). Showing direct provider results.';
         } catch (providerError) {
+          _results = MockDataService.search(query);
           _errorMessage =
-              'Backend failed ($e) and providers failed ($providerError).';
-          _results = [];
+              'Backend failed ($e) and providers failed ($providerError). Showing curated fallback results.';
         }
       } else {
+        _results = MockDataService.search(query);
         _errorMessage =
-            'Live search API is temporarily unavailable: $e.';
-        _results = [];
+            'Live search API is temporarily unavailable: $e. Showing curated fallback results.';
       }
     }
 
@@ -131,46 +121,6 @@ class SearchService extends ChangeNotifier {
     }).toList();
   }
 
-  Future<void> searchFromFile(File imageFile) async {
-    _mode = SearchMode.image;
-    _state = SearchState.loading;
-    _imageResult = null;
-    _query = 'Identifying product...';
-    notifyListeners();
-
-    try {
-      final identified = await _imageSearch.identifyProduct(imageFile);
-      _imageResult = identified;
-      _query = identified.searchQuery;
-      notifyListeners();
-      await search(identified.searchQuery);
-    } catch (e) {
-      _errorMessage = 'Could not identify product. Try a clearer photo.';
-      _state = SearchState.empty;
-      notifyListeners();
-    }
-  }
-
-  Future<void> searchFromBytes(Uint8List bytes, String mimeType) async {
-    _mode = SearchMode.image;
-    _state = SearchState.loading;
-    _imageResult = null;
-    _query = 'Identifying product...';
-    notifyListeners();
-
-    try {
-      final identified = await _imageSearch.identifyProductFromBytes(bytes, mimeType);
-      _imageResult = identified;
-      _query = identified.searchQuery;
-      notifyListeners();
-      await search(identified.searchQuery);
-    } catch (e) {
-      _errorMessage = 'Could not identify product: $e';
-      _state = SearchState.empty;
-      notifyListeners();
-    }
-  }
-
   void applyFilter(String filter) {
     _activeFilter = filter;
     List<Product> base = List.from(_results);
@@ -206,7 +156,6 @@ class SearchService extends ChangeNotifier {
     _results = [];
     _filteredResults = [];
     _query = '';
-    _imageResult = null;
     _errorMessage = null;
     notifyListeners();
   }

@@ -26,9 +26,6 @@ dependencies:
   intl: ^0.19.0
   url_launcher: ^6.2.4
 
-  # Image search
-  image_picker: ^1.0.7
-
   # Fonts & icons
   google_fonts: ^6.1.0
   cupertino_icons: ^1.0.6

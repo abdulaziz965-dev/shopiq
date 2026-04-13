@@ -19,8 +19,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: cs.surfaceContainerHighest,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -51,6 +52,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final body = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final muted = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 2),
       child: Column(
@@ -60,7 +63,7 @@ class HomeScreen extends StatelessWidget {
             'Good morning',
             style: GoogleFonts.dmSans(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: body,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -82,7 +85,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Find better prices across stores in seconds.',
-            style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.textMuted),
+            style: GoogleFonts.dmSans(fontSize: 12, color: muted),
           ),
         ],
       ),
@@ -90,6 +93,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSearchBox(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final muted = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: GestureDetector(
@@ -99,12 +104,12 @@ class HomeScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 0.7),
-            boxShadow: const [
+            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65), width: 0.7),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x120B1324),
+                color: Colors.black.withValues(alpha: 0.10),
                 blurRadius: 14,
                 offset: Offset(0, 4),
               ),
@@ -112,11 +117,11 @@ class HomeScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+              Icon(Icons.search_rounded, color: muted, size: 20),
               const SizedBox(width: 10),
               Text(
                 'Search any product...',
-                style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14),
+                style: GoogleFonts.dmSans(color: muted, fontSize: 14),
               ),
             ],
           ),
@@ -126,6 +131,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildAIBanner(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textPrimary = Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.textPrimary;
+    final textSecondary = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final muted = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: GestureDetector(
@@ -133,13 +142,16 @@ class HomeScreen extends StatelessWidget {
         child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.bg3, AppColors.bg4],
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accent.withValues(alpha: 0.18),
+              cs.surface,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border, width: 0.7),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65), width: 0.7),
         ),
         child: Row(
           children: [
@@ -157,16 +169,16 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('ShopIQ AI Assistant',
-                      style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      style: GoogleFonts.sora(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary)),
                   const SizedBox(height: 3),
                   Text(
                     'Ask me anything — "Best earphones under ₹3000"',
-                    style: GoogleFonts.dmSans(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                    style: GoogleFonts.dmSans(fontSize: 11, color: textSecondary, height: 1.4),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+            Icon(Icons.chevron_right, color: muted, size: 20),
           ],
         ),
         ),
@@ -175,6 +187,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildTrending(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textSecondary = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,13 +209,13 @@ class HomeScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
-                    color: AppColors.card,
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border2, width: 0.5),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6), width: 0.5),
                   ),
                   child: Text(
                     '🔥 $term',
-                    style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.textSecondary),
+                    style: GoogleFonts.dmSans(fontSize: 12, color: textSecondary),
                   ),
                 ),
               );
