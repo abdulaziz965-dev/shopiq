@@ -79,36 +79,29 @@ npm run app:run
 
 ## 🚀 Production Deployment
 
-For Vercel, the cleanest setup is to host the Flutter web app and the backend API in the same Vercel project.
+For Vercel, the cleanest setup is to deploy through GitHub Actions so Flutter runs on the GitHub runner, not inside Vercel's build image.
 
-### 1. Deploy the backend API on Vercel
+### Recommended Vercel flow
 
-The repo now includes Vercel API routes in the `api/` folder.
+Use the workflow in [.github/workflows/deploy-vercel.yml](.github/workflows/deploy-vercel.yml).
 
-Set these backend env vars in Vercel:
+Add these GitHub repository secrets:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Set these Vercel environment variables:
 
 - `SERP_API_KEY`
 - `RAPID_API_KEY`
-- `PORT` if your host requires it
-- optional RapidAPI host/path overrides if needed
 
-### 2. Build the Flutter web app locally
+How it works:
 
-Build the web app without a hardcoded backend URL. On Vercel, the app will call the same-origin API route automatically.
-
-```bash
-npm run web:build
-```
-
-### 3. Deploy to Vercel
-
-Use Vercel with the generated `build/web` output.
-
-If you deploy with the Vercel CLI, use the prebuilt output:
-
-```bash
-vercel deploy --prebuilt
-```
+1. GitHub Actions installs Flutter.
+2. It runs `flutter build web --release`.
+3. It asks Vercel to build the project from the prebuilt web output.
+4. Vercel serves the app and the `api/` routes.
 
 Notes:
 

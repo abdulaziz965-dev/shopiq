@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run web:build",
+  "buildCommand": "echo \"Flutter build handled by GitHub Actions\"",
   "outputDirectory": "build/web",
   "rewrites": [
     {
