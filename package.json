@@ -1,6 +1,9 @@
 {
   "name": "shopiq-workspace",
   "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  },
   "scripts": {
     "app:run": "flutter run --dart-define-from-file=dart_define.json",
     "web:build": "node scripts/build_web.mjs",

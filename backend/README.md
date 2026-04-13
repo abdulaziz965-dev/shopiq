@@ -20,6 +20,9 @@ Set values in `.env`:
 - `PORT` (default `8080`)
 - `SERP_API_KEY`
 - `RAPID_API_KEY`
+- Firestore (optional, but preferred as primary source):
+  - `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON string)
+  - or split variables: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
 - Optional endpoint overrides (if your RapidAPI subscription uses a different host/path):
   - `AMAZON_API_HOST`
   - `AMAZON_SEARCH_PATH`
@@ -53,6 +56,12 @@ Health check:
 Search endpoint:
 
 - `GET http://localhost:8080/api/search?q=iphone`
+
+Suggest endpoint:
+
+- `GET http://localhost:8080/api/suggest?q=iphone&limit=8`
+
+If Firestore env vars are configured, backend reads Firestore first and falls back to live providers.
 
 ## 4) Connect Flutter app
 

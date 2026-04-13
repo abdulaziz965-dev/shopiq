@@ -16,6 +16,12 @@ class DealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = Color(deal['color'] as int);
+    final isDarkCard = cardColor.computeLuminance() < 0.45;
+    final titleColor = isDarkCard ? const Color(0xFFF8FAFC) : AppColors.textPrimary;
+    final priceColor = isDarkCard ? const Color(0xFF22D3EE) : AppColors.accent;
+    final mutedColor = isDarkCard ? const Color(0xFFD1D5DB) : AppColors.textMuted;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -23,9 +29,12 @@ class DealCard extends StatelessWidget {
         height: 178,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Color(deal['color'] as int),
+          color: cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border2, width: 0.5),
+          border: Border.all(
+            color: isDarkCard ? Colors.white.withValues(alpha: 0.18) : AppColors.border2,
+            width: 0.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +67,9 @@ class DealCard extends StatelessWidget {
               width: double.infinity,
               height: 62,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.35),
+                color: isDarkCard
+                    ? Colors.white.withValues(alpha: 0.32)
+                    : Colors.white.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
@@ -78,7 +89,7 @@ class DealCard extends StatelessWidget {
               style: GoogleFonts.dmSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: titleColor,
                 height: 1.25,
               ),
             ),
@@ -90,14 +101,14 @@ class DealCard extends StatelessWidget {
               style: GoogleFonts.sora(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.accent,
+                color: priceColor,
               ),
             ),
             Text(
               deal['original'] as String,
               style: GoogleFonts.dmSans(
                 fontSize: 10,
-                color: AppColors.textMuted,
+                color: mutedColor,
                 decoration: TextDecoration.lineThrough,
               ),
             ),

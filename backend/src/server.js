@@ -3,6 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import {
+  isFirestoreConfigured,
+  searchFirestoreProducts,
+  suggestFirestore,
+} from './firestore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,6 +57,21 @@ app.get('/api/search', async (req, res) => {
   }
 
   try {
+    if (isFirestoreConfigured()) {
+      const firestoreItems = await searchFirestoreProducts(q, 40);
+      if (firestoreItems.length > 0) {
+        return res.json({
+          items: firestoreItems,
+          meta: {
+            query: q,
+            count: firestoreItems.length,
+            source: 'firestore',
+            warnings: [],
+          },
+        });
+      }
+    }
+
     const [serpItems, amazonItems, flipkartItems] = await Promise.all([
       searchSerp(q).catch((e) => ({ items: [], error: `SerpAPI: ${e.message}` })),
       searchAmazon(q).catch((e) => ({ items: [], error: `Amazon RapidAPI: ${e.message}` })),
@@ -95,6 +115,13 @@ app.get('/api/suggest', async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 8) || 8, 12);
   if (!q) {
     return res.json({ suggestions: SUGGESTION_SEED.slice(0, limit) });
+  }
+
+  if (isFirestoreConfigured()) {
+    const firestoreSuggestions = await suggestFirestore(q, limit);
+    if (firestoreSuggestions.length > 0) {
+      return res.json({ suggestions: firestoreSuggestions });
+    }
   }
 
   try {

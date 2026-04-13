@@ -95,6 +95,9 @@ Set these Vercel environment variables:
 
 - `SERP_API_KEY`
 - `RAPID_API_KEY`
+- Firestore (recommended primary backend source):
+        - `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON from Firebase service account, minified string)
+        - or split variables: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
 
 How it works:
 
@@ -109,6 +112,30 @@ Notes:
 - The web app will use the same origin as the deployed Vercel app to reach `/api/search`.
 - The local `backend/` folder is still useful for local development.
 - AI/chat/image features still depend on their own runtime setup.
+- If Firestore is configured, `/api/search` and `/api/suggest` read Firestore first and use live providers only as fallback.
+
+### Firestore Collections
+
+Use these collections for best results:
+
+- `products`
+        - `title` (string)
+        - `platform` (string)
+        - `price` (number)
+        - `originalPrice` (number)
+        - `rating` (number)
+        - `reviews` (number)
+        - `delivery` (string)
+        - `deliveryDays` (number)
+        - `discount` (number)
+        - `affiliateUrl` (string)
+        - `imageUrl` (string)
+        - `normalizedTitle` (string, lowercase)
+        - `searchTokens` (array of strings)
+
+- `searchSuggestions`
+        - `text` (string)
+        - `normalized` (string, lowercase)
 
 ---
 

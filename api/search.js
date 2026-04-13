@@ -1,3 +1,8 @@
+const {
+  isFirestoreConfigured,
+  searchFirestoreProducts,
+} = require('./_firestore');
+
 function parsePrice(value) {
   if (value == null) return 0;
   const cleaned = String(value).replace(/[^0-9.]/g, '');
@@ -301,6 +306,22 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    if (isFirestoreConfigured()) {
+      const firestoreItems = await searchFirestoreProducts(q, 40);
+      if (firestoreItems.length > 0) {
+        res.status(200).json({
+          items: firestoreItems,
+          meta: {
+            query: q,
+            count: firestoreItems.length,
+            source: 'firestore',
+            warnings: [],
+          },
+        });
+        return;
+      }
+    }
+
     const [serpItems, amazonItems, flipkartItems] = await Promise.all([
       searchSerp(q).catch((e) => ({ items: [], error: `SerpAPI: ${e.message}` })),
       searchAmazon(q).catch((e) => ({ items: [], error: `Amazon RapidAPI: ${e.message}` })),
