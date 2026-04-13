@@ -1,6 +1,6 @@
 {
   "buildCommand": "echo \"Flutter build handled by GitHub Actions\"",
-  "outputDirectory": "web",
+  "outputDirectory": "build/web",
   "rewrites": [
     {
       "source": "/api/(.*)",
