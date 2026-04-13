@@ -1,0 +1,42 @@
+name: shopiq
+description: ShopIQ - AI-powered product comparison and smart shopping assistant
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking
+  http: ^1.2.0
+
+  # State management
+  provider: ^6.1.1
+
+  # Charts
+  fl_chart: ^0.67.0
+
+  # Local storage
+  shared_preferences: ^2.2.2
+
+  # Utilities
+  intl: ^0.19.0
+  url_launcher: ^6.2.4
+
+  # Image search
+  image_picker: ^1.0.7
+
+  # Fonts & icons
+  google_fonts: ^6.1.0
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

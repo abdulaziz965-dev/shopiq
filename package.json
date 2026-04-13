@@ -1,0 +1,10 @@
+{
+  "name": "shopiq-workspace",
+  "private": true,
+  "scripts": {
+    "app:run": "flutter run --dart-define-from-file=dart_define.json",
+    "web:build": "node scripts/build_web.mjs",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:start": "npm --prefix backend run start"
+  }
+}
