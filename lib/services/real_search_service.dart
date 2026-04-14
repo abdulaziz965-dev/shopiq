@@ -151,6 +151,7 @@ class RealSearchService {
       final orig = _parsePrice(item['originalPrice']?.toString() ?? '₹0');
 
       final rawUrl = item['url']?.toString() ?? '';
+      final productId = item['id']?.toString() ?? '';
       return Product(
         id: 'fk_${item['id'] ?? _fallbackId('fk')}',
         title: item['name'] as String? ?? 'Flipkart Product',
@@ -164,7 +165,7 @@ class RealSearchService {
         delivery: '2-3 days',
         deliveryDays: 2,
         discount: _calcDiscount(price, orig > 0 ? orig : price * 1.2),
-        affiliateUrl: _listingUrl(platform: 'Flipkart', query: query, rawUrl: rawUrl),
+        affiliateUrl: _listingUrl(platform: 'Flipkart', query: query, rawUrl: rawUrl, productId: productId),
         category: query.toLowerCase(),
         imageUrl: item['image'] as String?,
       );
@@ -201,24 +202,42 @@ class RealSearchService {
     return '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
   }
 
-  String _listingUrl({required String platform, required String query, String? rawUrl}) {
+  String _listingUrl({required String platform, required String query, String? rawUrl, String? productId}) {
     final normalized = (rawUrl ?? '').trim();
+    final prodId = (productId ?? '').trim();
+    final p = platform.toLowerCase();
+
+    // If valid product URL exists, use it
     if (normalized.isNotEmpty) {
       if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
         if (!_isRootDomain(normalized)) return normalized;
       } else if (normalized.startsWith('/')) {
-        if (platform.toLowerCase().contains('flipkart')) {
+        if (p.contains('flipkart')) {
           return 'https://www.flipkart.com$normalized';
+        }
+        if (p.contains('myntra')) {
+          return 'https://www.myntra.com$normalized';
         }
       }
     }
 
+    // If product ID exists, try to build direct URL
+    if (prodId.isNotEmpty) {
+      if (p.contains('flipkart')) return 'https://www.flipkart.com/p/$prodId';
+      if (p.contains('myntra')) return 'https://www.myntra.com/p/$prodId';
+    }
+
+    // Fallback to search
     final q = Uri.encodeComponent(query.trim());
-    final p = platform.toLowerCase();
     if (p.contains('amazon')) return 'https://www.amazon.in/s?k=$q';
     if (p.contains('flipkart')) return 'https://www.flipkart.com/search?q=$q';
     if (p.contains('myntra')) return 'https://www.myntra.com/$q';
     if (p.contains('croma')) return 'https://www.croma.com/searchB?q=$q%3Arelevance';
+    if (p.contains('snapdeal')) return 'https://www.snapdeal.com/search?keyword=$q';
+    if (p.contains('jiomart')) return 'https://www.jiomart.com/search?q=$q';
+    if (p.contains('paytm')) return 'https://paytmmall.com/shop/search?q=$q';
+    if (p.contains('ajio')) return 'https://www.ajio.com/search/?text=$q';
+    if (p.contains('firstcry')) return 'https://www.firstcry.com/search?q=$q';
     return 'https://www.google.com/search?q=$q';
   }
 
@@ -234,6 +253,11 @@ class RealSearchService {
     if (s.contains('flipkart')) return 'Flipkart';
     if (s.contains('myntra')) return 'Myntra';
     if (s.contains('croma')) return 'Croma';
+    if (s.contains('snapdeal')) return 'Snapdeal';
+    if (s.contains('jio')) return 'JioMart';
+    if (s.contains('paytm')) return 'Paytm';
+    if (s.contains('ajio')) return 'AJIO';
+    if (s.contains('firstcry')) return 'FirstCry';
     if (s.contains('reliance')) return 'Reliance Digital';
     if (s.contains('tata')) return 'Tata CLiQ';
     if (s.contains('meesho')) return 'Meesho';
@@ -246,6 +270,14 @@ class RealSearchService {
     if (s.contains('flipkart')) return '📦';
     if (s.contains('myntra')) return '👗';
     if (s.contains('croma')) return '🏪';
+    if (s.contains('snapdeal')) return '💰';
+    if (s.contains('jiomart')) return '🏬';
+    if (s.contains('paytm')) return '📱';
+    if (s.contains('ajio')) return '🏪';
+    if (s.contains('firstcry')) return '👶';
+    if (s.contains('reliance')) return '🏪';
+    if (s.contains('tata')) return '🏪';
+    if (s.contains('meesho')) return '👜';
     return '🛍️';
   }
 

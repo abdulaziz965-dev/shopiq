@@ -91,18 +91,47 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   // Product image (real URL or emoji fallback)
                   Container(width: imageSize, height: imageSize,
-                    decoration: BoxDecoration(color: AppColors.bg4, borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(
+                      color: AppColors.bg4, 
+                      borderRadius: BorderRadius.circular(14),
+                      gradient: p.imageUrl == null ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.bg4,
+                          AppColors.bg4.withValues(alpha: 0.7),
+                        ],
+                      ) : null,
+                    ),
                     clipBehavior: Clip.antiAlias,
                     child: p.imageUrl != null
                         ? Image.network(p.imageUrl!, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(child: Text(p.emoji, style: const TextStyle(fontSize: 38))),
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(p.emoji, style: const TextStyle(fontSize: 36)),
+                                  const SizedBox(height: 2),
+                                  Text('No image', style: GoogleFonts.dmSans(fontSize: 8, color: AppColors.textMuted)),
+                                ],
+                              ),
+                            ),
                             loadingBuilder: (_, child, progress) => progress == null ? child
                                 : Center(child: CircularProgressIndicator(
                                     value: progress.expectedTotalBytes != null
                                         ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
                                         : null,
                                     strokeWidth: 2, color: AppColors.accent)))
-                        : Center(child: Text(p.emoji, style: const TextStyle(fontSize: 38))),
+                        : Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(p.emoji, style: const TextStyle(fontSize: 36)),
+                              const SizedBox(height: 2),
+                              Text('No image', style: GoogleFonts.dmSans(fontSize: 8, color: AppColors.textMuted)),
+                            ],
+                          ),
+                        ),
                   ),
                   const SizedBox(width: 12),
 

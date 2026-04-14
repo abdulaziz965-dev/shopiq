@@ -17,7 +17,6 @@ class PriceHistorySheet extends StatelessWidget {
     final minPrice = history.map((p) => p.price).reduce((a, b) => a < b ? a : b);
     final maxPrice = history.map((p) => p.price).reduce((a, b) => a > b ? a : b);
     final currentPrice = product.price;
-    final lowestPrice = minPrice;
 
     final spots = history.asMap().entries.map((e) =>
         FlSpot(e.key.toDouble(), e.value.price)).toList();

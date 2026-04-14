@@ -303,9 +303,10 @@ async function searchFlipkart(query) {
   const items = raw.slice(0, 10).map((item, i) => {
     const price = parsePrice(item.price);
     const originalPrice = parsePrice(item.originalPrice ?? item.mrp) || Number((price * 1.2).toFixed(2));
+    const productId = item.id || item.productId || item.productUrl?.split('/').pop() || '';
 
     return {
-      id: `fk_${item.id || i + 1}`,
+      id: `fk_${productId || i + 1}`,
       title: String(item.name || item.title || 'Flipkart Product'),
       platform: 'Flipkart',
       price,
@@ -315,7 +316,7 @@ async function searchFlipkart(query) {
       delivery: '2-3 days',
       deliveryDays: 2,
       discount: calcDiscount(price, originalPrice),
-      affiliateUrl: ensureListingUrl('Flipkart', query, item.url),
+      affiliateUrl: ensureListingUrl('Flipkart', query, item.url, productId),
       imageUrl: item.image || item.imageUrl || item.thumbnail || null,
     };
   });
@@ -369,26 +370,50 @@ function normalizePlatform(source) {
   if (s.includes('flipkart')) return 'Flipkart';
   if (s.includes('myntra')) return 'Myntra';
   if (s.includes('croma')) return 'Croma';
+  if (s.includes('snapdeal')) return 'Snapdeal';
+  if (s.includes('jio')) return 'JioMart';
+  if (s.includes('paytm')) return 'Paytm';
+  if (s.includes('ajio')) return 'AJIO';
+  if (s.includes('firstcry')) return 'FirstCry';
   return String(source || 'Online');
 }
 
-function ensureListingUrl(platform, query, rawUrl = '') {
+function ensureListingUrl(platform, query, rawUrl = '', productId = '') {
   const url = String(rawUrl || '').trim();
+  const prodId = String(productId || '').trim();
+  const p = String(platform).toLowerCase();
+
+  // If valid product URL exists, use it
   if (url) {
     if ((url.startsWith('http://') || url.startsWith('https://')) && !isRootDomain(url)) {
       return url;
     }
-    if (url.startsWith('/') && String(platform).toLowerCase().includes('flipkart')) {
-      return `https://www.flipkart.com${url}`;
+    if (url.startsWith('/')) {
+      if (p.includes('flipkart')) return `https://www.flipkart.com${url}`;
+      if (p.includes('myntra')) return `https://www.myntra.com${url}`;
+      if (p.includes('snapdeal')) return `https://www.snapdeal.com${url}`;
     }
   }
 
+  // If product ID exists, try to build direct URL
+  if (prodId) {
+    if (p.includes('flipkart')) return `https://www.flipkart.com/p/${prodId}`;
+    if (p.includes('myntra')) return `https://www.myntra.com/p/${prodId}`;
+    if (p.includes('snapdeal')) return `https://www.snapdeal.com/product/${prodId}`;
+  }
+
+  // Fallback to platform-specific search
   const q = encodeURIComponent(query);
-  const p = String(platform).toLowerCase();
   if (p.includes('amazon')) return `https://www.amazon.in/s?k=${q}`;
   if (p.includes('flipkart')) return `https://www.flipkart.com/search?q=${q}`;
   if (p.includes('myntra')) return `https://www.myntra.com/${q}`;
   if (p.includes('croma')) return `https://www.croma.com/searchB?q=${q}%3Arelevance`;
+  if (p.includes('snapdeal')) return `https://www.snapdeal.com/search?keyword=${q}`;
+  if (p.includes('jiomart')) return `https://www.jiomart.com/search?q=${q}`;
+  if (p.includes('paytm')) return `https://paytmmall.com/shop/search?q=${q}`;
+  if (p.includes('ajio')) return `https://www.ajio.com/search/?text=${q}`;
+  if (p.includes('firstcry')) return `https://www.firstcry.com/search?q=${q}`;
+  
   return `https://www.google.com/search?q=${q}`;
 }
 
